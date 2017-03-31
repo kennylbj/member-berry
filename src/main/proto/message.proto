@@ -1,0 +1,42 @@
+// Record is a pojo represent for logical data
+message Record {
+    optional string id = 1;
+    required string name = 2;
+    required string password = 3;
+    required string description = 4;
+    optional string link = 5;
+}
+
+message User {
+    required string name = 1;
+    optional string password = 2;
+    optional string phnoe = 3;
+    optional bytes hash = 4;
+}
+
+// Command type shared both in client and server
+enum Type {
+    REGISTER = 1;
+    LOGIN = 2;
+    LOOKUP = 3;
+    ADD = 4;
+    DELETE = 5;
+    ALTER = 6;
+    RETRIEVEALL = 7;
+    LOGOUT = 8;
+}
+
+// following messages are commands sent to server
+message Request {
+    required Type type = 1;
+    optional string id = 2;
+    optional Record record = 3;
+    optional User user = 4;
+}
+
+// following messages are responses sent to client
+message Response {
+    required Type type = 1;
+    optional bool flag = 2;
+    repeated Record records = 4;
+}
