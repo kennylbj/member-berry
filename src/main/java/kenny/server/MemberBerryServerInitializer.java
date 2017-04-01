@@ -39,7 +39,8 @@ public class MemberBerryServerInitializer extends ChannelInitializer<SocketChann
         p.addLast(new ProtobufVarint32LengthFieldPrepender());
         p.addLast(new ProtobufEncoder());
 
-        // and then business logic.
+        // we create a handler for every new channel
+        // because it has stateful properties.
         p.addLast(new MemberBerryServerHandler(manipulator));
     }
 }

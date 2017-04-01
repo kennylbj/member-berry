@@ -29,6 +29,7 @@ public class MemberBerryServer {
         EventLoopGroup workerGroup = new NioEventLoopGroup();
         try {
             ServerBootstrap b = new ServerBootstrap();
+            // Share object between several threads because it's stateless.
             DataManipulator manipulator
                     = new FileSecureManipulatorImpl(new AesEncryptor(), new AesDecryptor());
             b.group(bossGroup, workerGroup)

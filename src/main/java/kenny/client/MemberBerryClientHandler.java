@@ -11,6 +11,7 @@ import kenny.proto.Message.*;
 import kenny.proto.Message.Request;
 import kenny.proto.Message.Response;
 import kenny.proto.Message.Type;
+import net.jcip.annotations.GuardedBy;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -21,8 +22,14 @@ import java.util.concurrent.CopyOnWriteArrayList;
  */
 public class MemberBerryClientHandler extends SimpleChannelInboundHandler<Response> implements Actions {
 
+    // Could be visited by multiply threads
+    @GuardedBy("observers")
     private final List<Observer> observers;
+
+    // We need to guarantee the memory visibility only
+    // because boolean assignment is atomic
     private volatile boolean login = false;
+
     private volatile Channel channel;
 
     public MemberBerryClientHandler() {

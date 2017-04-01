@@ -1,7 +1,6 @@
 package kenny.server;
 
 import com.google.protobuf.ByteString;
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import kenny.proto.Message.*;
@@ -14,20 +13,20 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * Created by kennylbj on 2017/3/24.
- * FIXME thread-safety?
+ * Each channel has it's own {@link MemberBerryServerHandler}, and
+ * handler's variables can be visited by single thread only. So it's
+ * safe without synchronize.
  */
 public class MemberBerryServerHandler extends SimpleChannelInboundHandler<Request> {
     private final DataManipulator manipulator;
 
-    // Maintain the map between channel and user info
-    // Visited by event loop thread only, since it's alright without synchronize.
-    private final Map<Channel, User> clients;
+    // Keep track of user info
+    private User user = null;
 
     private final FixedLengthHash hash = new Md5FixedLengthHashImpl();
 
     public MemberBerryServerHandler(DataManipulator saver) {
         this.manipulator = saver;
-        clients = new HashMap<>();
     }
 
     @Override
@@ -89,14 +88,13 @@ public class MemberBerryServerHandler extends SimpleChannelInboundHandler<Reques
         Optional<User> savedUser = manipulator.getUser(hashedUser.getName());
         if (savedUser.filter(user -> user.getHash().equals(hashedUser.getHash())).isPresent()) {
             flag = true;
-            clients.put(ctx.channel(), hashedUser);
+            user = hashedUser;
         }
         ctx.writeAndFlush(Response.newBuilder().setType(Type.LOGIN).setFlag(flag).build());
     }
 
     private void handleLookup(ChannelHandlerContext ctx, Request msg) {
         System.out.println("Lookup: " + msg.getId());
-        User user = clients.get(ctx.channel());
         Optional<Record> record = Optional.empty();
         if (user != null) {
             record = manipulator.getRecord(user, msg.getId());
@@ -108,7 +106,6 @@ public class MemberBerryServerHandler extends SimpleChannelInboundHandler<Reques
 
     private void handleAdd(ChannelHandlerContext ctx, Request msg) {
         System.out.println("Add: " + msg.getRecord().toString());
-        User user = clients.get(ctx.channel());
         boolean flag = false;
         if (user != null) {
             flag = manipulator.addRecord(user, pendRecordId(msg.getRecord()));
@@ -117,7 +114,6 @@ public class MemberBerryServerHandler extends SimpleChannelInboundHandler<Reques
     }
 
     private void handleDelete(ChannelHandlerContext ctx, Request msg) {
-        User user = clients.get(ctx.channel());
         boolean flag = false;
         if (user != null) {
             flag = manipulator.deleteRecord(user, msg.getId());
@@ -127,7 +123,6 @@ public class MemberBerryServerHandler extends SimpleChannelInboundHandler<Reques
     }
 
     private void handleAlter(ChannelHandlerContext ctx, Request msg) {
-        User user = clients.get(ctx.channel());
         boolean flag = false;
         if (user != null) {
             if (manipulator.getRecord(user, msg.getId()).isPresent()) {
@@ -140,7 +135,6 @@ public class MemberBerryServerHandler extends SimpleChannelInboundHandler<Reques
     }
 
     private void handleRetrieveAll(ChannelHandlerContext ctx, Request msg) {
-        User user = clients.get(ctx.channel());
         List<Record> records = new ArrayList<>();
         if (user != null) {
             records = manipulator.getAllRecords(user);
@@ -150,8 +144,8 @@ public class MemberBerryServerHandler extends SimpleChannelInboundHandler<Reques
 
     private void handleLogout(ChannelHandlerContext ctx, Request msg) {
         boolean flag = false;
-        if (clients.containsKey(ctx.channel())) {
-            clients.remove(ctx.channel());
+        if (user != null) {
+            user = null;
             flag = true;
         }
         ctx.writeAndFlush(Response.newBuilder().setType(Type.LOGOUT).setFlag(flag));
