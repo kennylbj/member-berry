@@ -21,12 +21,16 @@ public class ConsoleObserverImpl implements Observer, Runnable {
     }
 
     private void printRecord(Record record) {
-        System.out.println(record.toString());
+        System.out.println("Id          : " + record.getId());
+        System.out.println("Description : " + record.getDescription());
+        System.out.println("Name        : " + record.getName());
+        System.out.println("Password    : " + record.getPassword());
+        System.out.println("Link        : " + record.getLink() + "\n");
     }
 
     @Override
     public void onRetrieveAll(List<Record> records) {
-        System.out.println("Retrieve all records result:");
+        System.out.println("Retrieve all records result:\n");
         records.forEach(this::printRecord);
     }
 
@@ -206,6 +210,7 @@ public class ConsoleObserverImpl implements Observer, Runnable {
             System.out.println("Invalid add arguments.");
             return;
         }
+
         handler.add(Record.newBuilder()
                 .setName(name)
                 .setPassword(password)
@@ -289,6 +294,6 @@ public class ConsoleObserverImpl implements Observer, Runnable {
         System.out.println("lookup   : lookup a record.");
         System.out.println("alter    : modify a record.");
         System.out.println("retrieve : get all records of login user.");
-        System.out.println("logout  : logout from server.");
+        System.out.println("logout   : logout from server.");
     }
 }
